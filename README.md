@@ -1,4 +1,4 @@
-# fast-gshare-function
+# FaST-GShare-Autoscaler
 // TODO(user): Add simple overview of use/purpose
 
 ## Description
