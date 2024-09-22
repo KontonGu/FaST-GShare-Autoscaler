@@ -1,0 +1,41 @@
+apiVersion: caps.in.tum.fastgshare/v1
+kind: FaSTFunc
+metadata:
+  labels:
+    app.kubernetes.io/name: fastfunc
+    app.kubernetes.io/instance: fastfunc-sample
+    app.kubernetes.io/part-of: scheduler
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: scheduler
+  name: fastfunc-resnet
+  namespace: fast-gshare-fn
+spec:
+  selector:
+    matchLabels:
+      faas_function: fastfunc-resnet
+  podSpec:
+    containers:
+    - name: resnet-pytorch
+      image: docker.io/kontonpuku666/mlperf-resnet:pytorch
+      ports:
+        - containerPort: 8080
+      readinessProbe:
+        tcpSocket:
+          port: 5000
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      # env:
+      #   - name: CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
+      #     value: "60"
+      # ports:
+      # - containerPort: 5000
+      #   hostPort: 5000
+      volumeMounts:
+        - name: "model-volume"
+          mountPath: "/models/"
+      # command: ["/bin/bash", "-c"]
+      # args: ["sleep 7200"]
+    volumes:
+        - name: "model-volume"
+          hostPath:
+            path: "/models/"

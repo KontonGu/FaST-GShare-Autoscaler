@@ -49,6 +49,10 @@ type FaSTFuncStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+//+kubebuilder:rbac:groups=*,resources=pods,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=*,resources=fastpods,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=fastgshare.caps.in.tum,resources=fastpods,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=fastgshare.caps.in.tum,resources=*,verbs=*
 
 // FaSTFunc is the Schema for the fastfuncs API
 // +kubebuilder:subresource:status

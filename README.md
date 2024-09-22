@@ -18,6 +18,10 @@
 ```sh
 make docker-build docker-push IMG=<some-registry>/fast-gshare-autoscaler:tag
 ```
+ex. 
+```
+make docker-build docker-push IMG=docker.io/kontonpuku666/fast-gshare-autoscaler:test
+```
 
 **NOTE:** This image ought to be published in the personal registry you specified.
 And it is required to have access to pull the image from the working environment.

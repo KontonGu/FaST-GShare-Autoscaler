@@ -18,19 +18,26 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"sync"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	capsintumv1 "fastgshare/fastfunc/api/v1"
+	fastfuncv1 "fastgshare/fastfunc/api/v1"
 
 	fastpodv1 "github.com/KontonGu/FaST-GShare/pkg/apis/fastgshare.caps.in.tum/v1"
 	fastpodclientset "github.com/KontonGu/FaST-GShare/pkg/client/clientset/versioned"
+	fastpodinformer "github.com/KontonGu/FaST-GShare/pkg/client/informers/externalversions"
 	fastpodlisters "github.com/KontonGu/FaST-GShare/pkg/client/listers/fastgshare.caps.in.tum/v1"
 	"github.com/prometheus/client_golang/api"
 	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
 )
 
 // FaSTFuncReconciler reconciles a FaSTFunc object
@@ -40,6 +47,8 @@ type FaSTFuncReconciler struct {
 	promv1api     promv1.API
 	fastpodLister fastpodlisters.FaSTPodLister
 }
+
+var once sync.Once
 
 // +kubebuilder:rbac:groups=caps.in.tum.fastgshare,resources=fastfuncs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=caps.in.tum.fastgshare,resources=fastfuncs/status,verbs=get;update;patch
@@ -57,9 +66,67 @@ type FaSTFuncReconciler struct {
 func (r *FaSTFuncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	once.Do(func() {
+		go r.persistentReconcile()
+	})
 
 	return ctrl.Result{}, nil
+}
+
+func (r *FaSTFuncReconciler) persistentReconcile() {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		ctx := context.TODO()
+		// logger := log.FromContext(ctx)
+
+		var allFaSTfuncs fastfuncv1.FaSTFuncList
+		if err := r.List(ctx, &allFaSTfuncs); err != nil {
+			klog.Error(err, "Failed to get FaSTFuncs.")
+			return
+		}
+
+		for _, fstfunc := range allFaSTfuncs.Items {
+			funcName := fstfunc.ObjectMeta.Name
+			// make a Prometheus query to get the RPS of the function
+			query := fmt.Sprintf("rate(gateway_function_invocation_total{function_name='%s.%s'}[10s])", funcName, fstfunc.ObjectMeta.Namespace)
+			klog.Infof("Prometheus Query: %s.", query)
+			queryRes, _, err := r.promv1api.Query(ctx, query, time.Now())
+			curRPS := float64(0.0)
+			if err != nil {
+				klog.Errorf("Error Failed to get RPS of function %s.", funcName)
+				continue
+			}
+
+			if queryRes.(model.Vector).Len() != 0 {
+				klog.Infof("Current rps vec for function %s is %v.", funcName, queryRes)
+				curRPS = float64(queryRes.(model.Vector)[0].Value)
+			}
+			klog.Infof("Current rps for function %s is %f.", funcName, curRPS)
+
+		}
+
+	}
+}
+
+func getFaSTPodLister(client fastpodclientset.Interface, namespace string, stopCh chan struct{}) fastpodlisters.FaSTPodLister {
+	// create a shared informer factory for the FaasShare API group
+	informerFactory := fastpodinformer.NewSharedInformerFactoryWithOptions(
+		client,
+		0,
+		fastpodinformer.WithNamespace(namespace),
+	)
+	// retrieve the shared informer for FaSTPods
+	fastpodInformer := informerFactory.Fastgshare().V1().FaSTPods().Informer()
+	informerFactory.Start(stopCh)
+	if !cache.WaitForCacheSync(stopCh, fastpodInformer.HasSynced) {
+		return nil
+	}
+	// create a lister for FaSTPods using the shared informer's indexers
+	fastpodLister := fastpodlisters.NewFaSTPodLister(fastpodInformer.GetIndexer())
+	return fastpodLister
+
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -69,15 +136,18 @@ func (r *FaSTFuncReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Address: "http://prometheus.fastgshare.svc.cluster.local:9090",
 	})
 	if err != nil {
+		klog.Error("Failed to create the Prometheus client.")
 		return err
 	}
 	r.promv1api = promv1.NewAPI(promClient)
 	client, _ := fastpodclientset.NewForConfig(ctrl.GetConfigOrDie())
 	stopCh := make(chan struct{})
+	klog.Info("Before function getFaSTPodLister")
 	r.fastpodLister = getFaSTPodLister(client, "fast-gshare-fn", stopCh)
+	klog.Info("After function getFaSTPodLister")
 	fastpodv1.AddToScheme(r.Scheme)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&capsintumv1.FaSTFunc{}).
+		For(&fastfuncv1.FaSTFunc{}).
 		Complete(r)
 }

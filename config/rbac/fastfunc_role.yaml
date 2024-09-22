@@ -5,19 +5,6 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - '*'
-  resources:
-  - fastpods
-  - pods
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
   - caps.in.tum.fastgshare
   resources:
   - fastfuncs
@@ -43,21 +30,15 @@ rules:
   - get
   - patch
   - update
-- apiGroups:
-  - fastgshare.caps.in.tum
-  resources:
-  - '*'
-  verbs:
-  - '*'
-- apiGroups:
-  - fastgshare.caps.in.tum
-  resources:
-  - fastpods
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
+- apiGroups: [""]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["fastgshare.caps.in.tum"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["fastgshare.caps.in.tum"]
+  resources: ["fastpods"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "namespaces", "endpoints"]
+  verbs: ["get", "list", "watch"]
