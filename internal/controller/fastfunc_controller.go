@@ -1,5 +1,6 @@
 /*
-Copyright 2024.
+Copyright 2024 FaST-GShare Authors, KontonGu (Jianfeng Gu), et. al.
+@Techinical University of Munich, CAPS Cloud Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -89,6 +90,7 @@ func (r *FaSTFuncReconciler) persistentReconcile() {
 
 		for _, fstfunc := range allFaSTfuncs.Items {
 			funcName := fstfunc.ObjectMeta.Name
+			klog.Infof("Checking FaSTFunc %s.", funcName)
 			// make a Prometheus query to get the RPS of the function
 			query := fmt.Sprintf("rate(gateway_function_invocation_total{function_name='%s.%s'}[10s])", funcName, fstfunc.ObjectMeta.Namespace)
 			klog.Infof("Prometheus Query: %s.", query)
@@ -106,7 +108,6 @@ func (r *FaSTFuncReconciler) persistentReconcile() {
 			klog.Infof("Current rps for function %s is %f.", funcName, curRPS)
 
 		}
-
 	}
 }
 
@@ -133,7 +134,7 @@ func getFaSTPodLister(client fastpodclientset.Interface, namespace string, stopC
 func (r *FaSTFuncReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// Create a Prometheus API client
 	promClient, err := api.NewClient(api.Config{
-		Address: "http://prometheus.fastgshare.svc.cluster.local:9090",
+		Address: "http://prometheus.fast-gshare.svc.cluster.local:9090",
 	})
 	if err != nil {
 		klog.Error("Failed to create the Prometheus client.")
