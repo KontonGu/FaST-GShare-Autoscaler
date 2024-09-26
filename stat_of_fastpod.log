@@ -1,0 +1,167 @@
+Name:         fastfunc-resnet-q30-p12
+Namespace:    fast-gshare-fn
+Labels:       com.openfaas.scale.max=1
+              com.openfaas.scale.min=1
+              fast_function=fastfunc-resnet
+Annotations:  fastgshare/gpu_mem: 1073741824
+              fastgshare/gpu_quota_limit: 1.0
+              fastgshare/gpu_quota_request: 0.30
+              fastgshare/gpu_sm_partition: 12
+API Version:  fastgshare.caps.in.tum/v1
+Kind:         FaSTPod
+Metadata:
+  Creation Timestamp:  2024-09-24T08:32:56Z
+  Generation:          13
+  Managed Fields:
+    API Version:  fastgshare.caps.in.tum/v1
+    Fields Type:  FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:annotations:
+          .:
+          f:fastgshare/gpu_mem:
+          f:fastgshare/gpu_quota_limit:
+          f:fastgshare/gpu_quota_request:
+          f:fastgshare/gpu_sm_partition:
+        f:labels:
+          .:
+          f:com.openfaas.scale.max:
+          f:com.openfaas.scale.min:
+          f:fast_function:
+        f:ownerReferences:
+          .:
+          k:{"uid":"2aeeedea-6476-4a01-b31a-4d02c35d3823"}:
+      f:spec:
+        .:
+        f:podSpec:
+          .:
+          f:containers:
+          f:volumes:
+        f:replicas:
+        f:selector:
+          .:
+          f:matchLabels:
+            .:
+            f:faas_function:
+      f:status:
+        .:
+        f:replicas:
+    Manager:      manager
+    Operation:    Update
+    Time:         2024-09-24T08:32:56Z
+    API Version:  fastgshare.caps.in.tum/v1
+    Fields Type:  FieldsV1
+    fieldsV1:
+      f:status:
+        f:GPUClientPort:
+          .:
+          f:fastfunc-resnet-q30-p12-3xql9:
+          f:fastfunc-resnet-q30-p12-6e4ki:
+          f:fastfunc-resnet-q30-p12-7a8q8:
+          f:fastfunc-resnet-q30-p12-cfu9n:
+          f:fastfunc-resnet-q30-p12-do5y3:
+          f:fastfunc-resnet-q30-p12-eyu4i:
+          f:fastfunc-resnet-q30-p12-gjlu0:
+          f:fastfunc-resnet-q30-p12-hr18g:
+          f:fastfunc-resnet-q30-p12-js3vb:
+          f:fastfunc-resnet-q30-p12-m8poc:
+          f:fastfunc-resnet-q30-p12-o4jgl:
+          f:fastfunc-resnet-q30-p12-sjxq1:
+        f:boundDeviceIDs:
+          .:
+          f:fastfunc-resnet-q30-p12-3xql9:
+          f:fastfunc-resnet-q30-p12-6e4ki:
+          f:fastfunc-resnet-q30-p12-7a8q8:
+          f:fastfunc-resnet-q30-p12-cfu9n:
+          f:fastfunc-resnet-q30-p12-do5y3:
+          f:fastfunc-resnet-q30-p12-eyu4i:
+          f:fastfunc-resnet-q30-p12-gjlu0:
+          f:fastfunc-resnet-q30-p12-hr18g:
+          f:fastfunc-resnet-q30-p12-js3vb:
+          f:fastfunc-resnet-q30-p12-m8poc:
+          f:fastfunc-resnet-q30-p12-o4jgl:
+          f:fastfunc-resnet-q30-p12-sjxq1:
+        f:pod2node:
+        f:resourceconfig:
+          .:
+          f:fastgshare/gpu_quota_limit:
+          f:fastgshare/gpu_quota_request:
+          f:fastgshare/gpu_sm_partition:
+        f:usage:
+    Manager:    fastpodcontrollermanager
+    Operation:  Update
+    Time:       2024-09-24T08:32:59Z
+  Owner References:
+    API Version:           caps.in.tum.fastgshare/v1
+    Block Owner Deletion:  true
+    Controller:            true
+    Kind:                  FaSTFunc
+    Name:                  fastfunc-resnet
+    UID:                   2aeeedea-6476-4a01-b31a-4d02c35d3823
+  Resource Version:        7834301
+  UID:                     e561a9df-3dc2-48f6-95a7-99e76953643f
+Spec:
+  Pod Spec:
+    Containers:
+      Image:  docker.io/kontonpuku666/mlperf-resnet:pytorch
+      Name:   resnet-pytorch
+      Ports:
+        Container Port:  8080
+        Protocol:        TCP
+      Readiness Probe:
+        Initial Delay Seconds:  5
+        Period Seconds:         10
+        Tcp Socket:
+          Port:  5000
+      Resources:
+      Volume Mounts:
+        Mount Path:  /models/
+        Name:        model-volume
+    Volumes:
+      Host Path:
+        Path:  /models/
+      Name:    model-volume
+  Replicas:    1
+  Selector:
+    Match Labels:
+      faas_function:  fastfunc-resnet
+Status:
+  GPU Client Port:
+    fastfunc-resnet-q30-p12-3xql9:  56006
+    fastfunc-resnet-q30-p12-6e4ki:  56016
+    fastfunc-resnet-q30-p12-7a8q8:  56003
+    fastfunc-resnet-q30-p12-cfu9n:  56004
+    fastfunc-resnet-q30-p12-do5y3:  56011
+    fastfunc-resnet-q30-p12-eyu4i:  56017
+    fastfunc-resnet-q30-p12-gjlu0:  56012
+    fastfunc-resnet-q30-p12-hr18g:  56002
+    fastfunc-resnet-q30-p12-js3vb:  56009
+    fastfunc-resnet-q30-p12-m8poc:  56014
+    fastfunc-resnet-q30-p12-o4jgl:  56010
+    fastfunc-resnet-q30-p12-sjxq1:  56007
+  Bound Device I Ds:
+    fastfunc-resnet-q30-p12-3xql9:  60cf9967
+    fastfunc-resnet-q30-p12-6e4ki:  60cf9967
+    fastfunc-resnet-q30-p12-7a8q8:  60cf9967
+    fastfunc-resnet-q30-p12-cfu9n:  60cf9967
+    fastfunc-resnet-q30-p12-do5y3:  60cf9967
+    fastfunc-resnet-q30-p12-eyu4i:  60cf9967
+    fastfunc-resnet-q30-p12-gjlu0:  60cf9967
+    fastfunc-resnet-q30-p12-hr18g:  60cf9967
+    fastfunc-resnet-q30-p12-js3vb:  60cf9967
+    fastfunc-resnet-q30-p12-m8poc:  60cf9967
+    fastfunc-resnet-q30-p12-o4jgl:  60cf9967
+    fastfunc-resnet-q30-p12-sjxq1:  60cf9967
+  pod2node:
+  Replicas:  0
+  Resourceconfig:
+    fastgshare/gpu_quota_limit:    1.0
+    fastgshare/gpu_quota_request:  0.30
+    fastgshare/gpu_sm_partition:   12
+  Usage:
+Events:
+  Type     Reason         Age                     From                 Message
+  ----     ------         ----                    ----                 -------
+  Warning  ErrValueError  4m24s (x11 over 4m25s)  fastpod-controller   Out of memory
+  Warning  ErrValueError  4m14s (x14 over 4m23s)  fastpod-controller   Compute Resource exceed
+  Normal   Synced         71s (x14 over 4m29s)    fastgshare-operator  FaSTPod synced successfully
