@@ -42,7 +42,6 @@ import (
 	fastpodlisters "github.com/KontonGu/FaST-GShare/pkg/client/listers/fastgshare.caps.in.tum/v1"
 	"github.com/prometheus/client_golang/api"
 	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
-	"github.com/prometheus/common/model"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -92,7 +91,7 @@ func (r *FaSTFuncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 func (r *FaSTFuncReconciler) persistentReconcile() {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
-	// tried := false
+	tried := false
 	for range ticker.C {
 		ctx := context.TODO()
 		// logger := log.FromContext(ctx)
@@ -105,81 +104,88 @@ func (r *FaSTFuncReconciler) persistentReconcile() {
 
 		// reconcile for each FaSTFunc
 		for _, fstfunc := range allFaSTfuncs.Items {
+
 			//KONTON_Testing
-			// funcName := fstfunc.ObjectMeta.Name
-			// klog.Infof("Checking FaSTFunc %s.", funcName)
-			// if !tried {
-			// 	tried = true
-			// 	config, _ := getMostEfficientConfig()
-			// 	var configslist []*FaSTPodConfig
-			// 	configslist = append(configslist, &config)
-			// 	fastpods, _ := r.configs2FaSTPods(&fstfunc, configslist)
-			// 	// err := r.reconcileDesiredFaSTFunc(fastpods)
-			// 	err := r.Create(context.TODO(), fastpods[0])
-			// 	if err != nil {
-			// 		klog.Errorf("Failed to create the fastfunc %s.", funcName)
-			// 	}
-			// }
-
-			//KONTON_Testing_end
-
 			funcName := fstfunc.ObjectMeta.Name
 			klog.Infof("Checking FaSTFunc %s.", funcName)
-			// make a Prometheus query to get the RPS of the function
-			query := fmt.Sprintf("rate(gateway_function_invocation_total{function_name='%s.%s'}[10s])", funcName, fstfunc.ObjectMeta.Namespace)
-			// klog.Infof("Prometheus Query: %s.", query)
-			queryRes, _, err := r.promv1api.Query(ctx, query, time.Now())
-			curRPS := float64(0.0)
-			if err != nil {
-				klog.Errorf("Error Failed to get RPS of function %s.", funcName)
-				continue
+			if !tried {
+				tried = true
+				config, _ := getMostEfficientConfig()
+				var configslist []*FaSTPodConfig
+				configslist = append(configslist, &config)
+				config2, _ := getMostEfficientConfig()
+				configslist = append(configslist, &config2)
+				config2.Quota = int64(40)
+				fastpods, _ := r.configs2FaSTPods(&fstfunc, configslist)
+				// err := r.reconcileDesiredFaSTFunc(fastpods)
+				err := r.Create(context.TODO(), fastpods[0])
+				if err != nil {
+					klog.Errorf("Failed to create the fastfunc %s.", funcName)
+				}
+				err = r.Create(context.TODO(), fastpods[1])
+				if err != nil {
+					klog.Errorf("Failed to create the fastpod %s.", fastpods[1].Name)
+				}
 			}
+			//KONTON_Testing_end
 
-			if queryRes.(model.Vector).Len() != 0 {
-				klog.Infof("Current rps vec for function %s is %v.", funcName, queryRes)
-				curRPS = float64(queryRes.(model.Vector)[0].Value)
-			}
-			klog.Infof("Current rps for function %s is %f.", funcName, curRPS)
+			// funcName := fstfunc.ObjectMeta.Name
+			// klog.Infof("Checking FaSTFunc %s.", funcName)
+			// // make a Prometheus query to get the RPS of the function
+			// query := fmt.Sprintf("rate(gateway_function_invocation_total{function_name='%s.%s'}[10s])", funcName, fstfunc.ObjectMeta.Namespace)
+			// // klog.Infof("Prometheus Query: %s.", query)
+			// queryRes, _, err := r.promv1api.Query(ctx, query, time.Now())
+			// curRPS := float64(0.0)
+			// if err != nil {
+			// 	klog.Errorf("Error Failed to get RPS of function %s.", funcName)
+			// 	continue
+			// }
 
-			// make a Prometheus query to get the RPS of past 30s
-			pastRPS := float64(0.0)
-			pastquery := fmt.Sprintf("rate(gateway_function_invocation_total{function_name='%s.%s'}[30s])", funcName, fstfunc.ObjectMeta.Namespace)
-			// klog.Infof("Prometheus Query: %s.", pastquery)
-			pastqueryVec, _, err := r.promv1api.Query(ctx, pastquery, time.Now())
-			if err != nil {
-				klog.Errorf("Error Failed to get past 30s RPS of function %s.", funcName)
-				continue
-			}
-			if pastqueryVec.(model.Vector).Len() != 0 {
-				klog.Infof("Past 30s rps vec for function %s is %v.", funcName, pastqueryVec)
-				pastRPS = float64(pastqueryVec.(model.Vector)[0].Value)
-			}
-			klog.Infof("Past 30s rps for function %s is %f.", funcName, pastRPS)
+			// if queryRes.(model.Vector).Len() != 0 {
+			// 	klog.Infof("Current rps vec for function %s is %v.", funcName, queryRes)
+			// 	curRPS = float64(queryRes.(model.Vector)[0].Value)
+			// }
+			// klog.Infof("Current rps for function %s is %f.", funcName, curRPS)
 
-			// make a Prometheus query to get the RPS of old 30s
-			oldRPS := float64(0.0)
-			oldTime := time.Now().Add(-30 * time.Second)
-			// klog.Infof("Prometheus Query: %s.", pastquery)
-			oldqueryVec, _, err := r.promv1api.Query(ctx, pastquery, oldTime)
-			if err != nil {
-				klog.Errorf("Error Failed to get old 30s RPS of function %s.", funcName)
-				continue
-			}
-			if oldqueryVec.(model.Vector).Len() != 0 {
-				klog.Infof("Old 30s rps vec for function %s is %v.", funcName, oldqueryVec)
-				oldRPS = float64(oldqueryVec.(model.Vector)[0].Value)
-			}
-			// klog.Infof("Old 30s rps for function %s is %f.", funcName, oldRPS)
+			// // make a Prometheus query to get the RPS of past 30s
+			// pastRPS := float64(0.0)
+			// pastquery := fmt.Sprintf("rate(gateway_function_invocation_total{function_name='%s.%s'}[30s])", funcName, fstfunc.ObjectMeta.Namespace)
+			// // klog.Infof("Prometheus Query: %s.", pastquery)
+			// pastqueryVec, _, err := r.promv1api.Query(ctx, pastquery, time.Now())
+			// if err != nil {
+			// 	klog.Errorf("Error Failed to get past 30s RPS of function %s.", funcName)
+			// 	continue
+			// }
+			// if pastqueryVec.(model.Vector).Len() != 0 {
+			// 	klog.Infof("Past 30s rps vec for function %s is %v.", funcName, pastqueryVec)
+			// 	pastRPS = float64(pastqueryVec.(model.Vector)[0].Value)
+			// }
+			// klog.Infof("Past 30s rps for function %s is %f.", funcName, pastRPS)
 
-			desiredFastpods := r.getDesiredFastfuncSpec(&fstfunc, curRPS, pastRPS, oldRPS)
-			if desiredFastpods == nil {
-				continue
-			}
-			err = r.reconcileDesiredFaSTFunc(desiredFastpods)
-			if err != nil {
-				klog.Errorf("Error Cannot reconcile the desired FaSTFunc %s.", funcName)
-				continue
-			}
+			// // make a Prometheus query to get the RPS of old 30s
+			// oldRPS := float64(0.0)
+			// oldTime := time.Now().Add(-30 * time.Second)
+			// // klog.Infof("Prometheus Query: %s.", pastquery)
+			// oldqueryVec, _, err := r.promv1api.Query(ctx, pastquery, oldTime)
+			// if err != nil {
+			// 	klog.Errorf("Error Failed to get old 30s RPS of function %s.", funcName)
+			// 	continue
+			// }
+			// if oldqueryVec.(model.Vector).Len() != 0 {
+			// 	klog.Infof("Old 30s rps vec for function %s is %v.", funcName, oldqueryVec)
+			// 	oldRPS = float64(oldqueryVec.(model.Vector)[0].Value)
+			// }
+			// // klog.Infof("Old 30s rps for function %s is %f.", funcName, oldRPS)
+
+			// desiredFastpods := r.getDesiredFastfuncSpec(&fstfunc, curRPS, pastRPS, oldRPS)
+			// if desiredFastpods == nil {
+			// 	continue
+			// }
+			// err = r.reconcileDesiredFaSTFunc(desiredFastpods)
+			// if err != nil {
+			// 	klog.Errorf("Error Cannot reconcile the desired FaSTFunc %s.", funcName)
+			// 	continue
+			// }
 		}
 	}
 }
@@ -338,7 +344,7 @@ func (r *FaSTFuncReconciler) configs2FaSTPods(fastfunc *fastfuncv1.FaSTFunc, con
 		extendedAnnotations[fastpodv1.FaSTGShareGPUQuotaLimit] = "1.0"
 		extendedAnnotations[fastpodv1.FaSTGShareGPUSMPartition] = smPartition
 		extendedAnnotations[fastpodv1.FaSTGShareGPUMemory] = mem
-		fixedReplica_int32 := int32(config.Replicas)
+		fixedReplica_int32 := int32(1)
 		fastpod := &fastpodv1.FaSTPod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:        fastfunc.ObjectMeta.Name + getResKeyName(config.Quota, config.SMPartition),

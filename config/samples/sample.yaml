@@ -12,7 +12,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      faas_function: fastfunc-resnet
+      fast_function: fastfunc-resnet
   podSpec:
     containers:
     - name: resnet-pytorch
