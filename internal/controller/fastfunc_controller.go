@@ -42,6 +42,7 @@ import (
 	fastpodlisters "github.com/KontonGu/FaST-GShare/pkg/client/listers/fastgshare.caps.in.tum/v1"
 	"github.com/prometheus/client_golang/api"
 	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -111,6 +112,7 @@ func (r *FaSTFuncReconciler) persistentReconcile() {
 			if !tried {
 				tried = true
 				config, _ := getMostEfficientConfig()
+				config.Replicas = 1
 				var configslist []*FaSTPodConfig
 				configslist = append(configslist, &config)
 				config2, _ := getMostEfficientConfig()
@@ -122,60 +124,60 @@ func (r *FaSTFuncReconciler) persistentReconcile() {
 				if err != nil {
 					klog.Errorf("Failed to create the fastfunc %s.", funcName)
 				}
-				err = r.Create(context.TODO(), fastpods[1])
-				if err != nil {
-					klog.Errorf("Failed to create the fastpod %s.", fastpods[1].Name)
-				}
+				// err = r.Create(context.TODO(), fastpods[1])
+				// if err != nil {
+				// 	klog.Errorf("Failed to create the fastpod %s.", fastpods[1].Name)
+				// }
 			}
 			//KONTON_Testing_end
 
 			// funcName := fstfunc.ObjectMeta.Name
-			// klog.Infof("Checking FaSTFunc %s.", funcName)
-			// // make a Prometheus query to get the RPS of the function
-			// query := fmt.Sprintf("rate(gateway_function_invocation_total{function_name='%s.%s'}[10s])", funcName, fstfunc.ObjectMeta.Namespace)
-			// // klog.Infof("Prometheus Query: %s.", query)
-			// queryRes, _, err := r.promv1api.Query(ctx, query, time.Now())
-			// curRPS := float64(0.0)
-			// if err != nil {
-			// 	klog.Errorf("Error Failed to get RPS of function %s.", funcName)
-			// 	continue
-			// }
+			klog.Infof("Checking FaSTFunc %s.", funcName)
+			// make a Prometheus query to get the RPS of the function
+			query := fmt.Sprintf("rate(gateway_function_invocation_total{function_name='%s.%s'}[10s])", funcName, fstfunc.ObjectMeta.Namespace)
+			klog.Infof("Prometheus Query: %s.", query)
+			queryRes, _, err := r.promv1api.Query(ctx, query, time.Now())
+			curRPS := float64(0.0)
+			if err != nil {
+				klog.Errorf("Error Failed to get RPS of function %s: %s.", funcName, err.Error())
+				continue
+			}
 
-			// if queryRes.(model.Vector).Len() != 0 {
-			// 	klog.Infof("Current rps vec for function %s is %v.", funcName, queryRes)
-			// 	curRPS = float64(queryRes.(model.Vector)[0].Value)
-			// }
-			// klog.Infof("Current rps for function %s is %f.", funcName, curRPS)
+			if queryRes.(model.Vector).Len() != 0 {
+				klog.Infof("Current rps vec for function %s is %v.", funcName, queryRes)
+				curRPS = float64(queryRes.(model.Vector)[0].Value)
+			}
+			klog.Infof("Current rps for function %s is %f.", funcName, curRPS)
 
-			// // make a Prometheus query to get the RPS of past 30s
-			// pastRPS := float64(0.0)
-			// pastquery := fmt.Sprintf("rate(gateway_function_invocation_total{function_name='%s.%s'}[30s])", funcName, fstfunc.ObjectMeta.Namespace)
-			// // klog.Infof("Prometheus Query: %s.", pastquery)
-			// pastqueryVec, _, err := r.promv1api.Query(ctx, pastquery, time.Now())
-			// if err != nil {
-			// 	klog.Errorf("Error Failed to get past 30s RPS of function %s.", funcName)
-			// 	continue
-			// }
-			// if pastqueryVec.(model.Vector).Len() != 0 {
-			// 	klog.Infof("Past 30s rps vec for function %s is %v.", funcName, pastqueryVec)
-			// 	pastRPS = float64(pastqueryVec.(model.Vector)[0].Value)
-			// }
-			// klog.Infof("Past 30s rps for function %s is %f.", funcName, pastRPS)
+			// make a Prometheus query to get the RPS of past 30s
+			pastRPS := float64(0.0)
+			pastquery := fmt.Sprintf("rate(gateway_function_invocation_total{function_name='%s.%s'}[30s])", funcName, fstfunc.ObjectMeta.Namespace)
+			// klog.Infof("Prometheus Query: %s.", pastquery)
+			pastqueryVec, _, err := r.promv1api.Query(ctx, pastquery, time.Now())
+			if err != nil {
+				klog.Errorf("Error Failed to get past 30s RPS of function %s.", funcName)
+				continue
+			}
+			if pastqueryVec.(model.Vector).Len() != 0 {
+				klog.Infof("Past 30s rps vec for function %s is %v.", funcName, pastqueryVec)
+				pastRPS = float64(pastqueryVec.(model.Vector)[0].Value)
+			}
+			klog.Infof("Past 30s rps for function %s is %f.", funcName, pastRPS)
 
-			// // make a Prometheus query to get the RPS of old 30s
-			// oldRPS := float64(0.0)
-			// oldTime := time.Now().Add(-30 * time.Second)
-			// // klog.Infof("Prometheus Query: %s.", pastquery)
-			// oldqueryVec, _, err := r.promv1api.Query(ctx, pastquery, oldTime)
-			// if err != nil {
-			// 	klog.Errorf("Error Failed to get old 30s RPS of function %s.", funcName)
-			// 	continue
-			// }
-			// if oldqueryVec.(model.Vector).Len() != 0 {
-			// 	klog.Infof("Old 30s rps vec for function %s is %v.", funcName, oldqueryVec)
-			// 	oldRPS = float64(oldqueryVec.(model.Vector)[0].Value)
-			// }
-			// // klog.Infof("Old 30s rps for function %s is %f.", funcName, oldRPS)
+			// make a Prometheus query to get the RPS of old 30s
+			oldRPS := float64(0.0)
+			oldTime := time.Now().Add(-30 * time.Second)
+			// klog.Infof("Prometheus Query: %s.", pastquery)
+			oldqueryVec, _, err := r.promv1api.Query(ctx, pastquery, oldTime)
+			if err != nil {
+				klog.Errorf("Error Failed to get old 30s RPS of function %s.", funcName)
+				continue
+			}
+			if oldqueryVec.(model.Vector).Len() != 0 {
+				klog.Infof("Old 30s rps vec for function %s is %v.", funcName, oldqueryVec)
+				oldRPS = float64(oldqueryVec.(model.Vector)[0].Value)
+			}
+			klog.Infof("Old 30s rps for function %s is %f.", funcName, oldRPS)
 
 			// desiredFastpods := r.getDesiredFastfuncSpec(&fstfunc, curRPS, pastRPS, oldRPS)
 			// if desiredFastpods == nil {
@@ -197,51 +199,9 @@ func (r *FaSTFuncReconciler) getDesiredFastfuncSpec(fastfunc *fastfuncv1.FaSTFun
 	// rps difference
 	deltaReqs := curRPS - totalRPSCap
 	klog.Infof("RPS difference (DeltaRPS) = %f.", deltaReqs)
-	scaling := (pastRPS - oldRPS) > 0
+	// scaling := (pastRPS - oldRPS) > 0
 
-	if deltaReqs > 0 && !scaling {
-		klog.Info("Scaling up initially.")
-		configslist := r.schedule(deltaReqs)
-		for _, config := range configslist {
-			config.Replicas += nominalRPSmap[getResKeyName(config.Quota, config.SMPartition)]
-		}
-		fastpods, _ := r.configs2FaSTPods(fastfunc, configslist)
-		return fastpods
-	} else if scaling && oldRPS > 0 && pastRPS > 0 {
-		klog.Infof("Scaling up normally")
-		configlist := r.schedule(deltaReqs)
-		for _, config := range configlist {
-			klog.Infof("originally required replica: %d", config.Replicas)
-			factor := pastRPS / oldRPS
-			var tmp float64
-			tmp = float64(config.Replicas) * factor
-			config.Replicas = int64(math.Ceil(tmp))
-			klog.Infof("new replica: %d", config.Replicas)
-		}
-		fastpods, _ := r.configs2FaSTPods(fastfunc, configlist)
-		return fastpods
-	} else if deltaReqs < 0 {
-		// scaling down
-		klog.Info("Scaling down")
-		deltaReqs = deltaReqs * (-1)
-		for key, replica := range nominalRPSmap {
-			quota, smPartition := parseFromKeyName(key)
-			rpsUnit := retrieveResource2RPSCapability(fastfunc.ObjectMeta.Name, float64(quota)/100.0, int64(smPartition))
-			n := int64(deltaReqs / rpsUnit)
-			if replica > n {
-				replica = replica - n
-				deltaReqs = deltaReqs - float64(n)*rpsUnit
-			} else {
-				replica = 0
-				deltaReqs = deltaReqs - float64(replica)*rpsUnit
-			}
-			r.scaleDownFaSTFunc(fastfunc.ObjectMeta.Name+key, replica)
-		}
-
-	}
-
-	// // KONTON Testing Start
-	// if deltaReqs > 0.2*totalRPSCap {
+	// if deltaReqs > 0 && !scaling {
 	// 	klog.Info("Scaling up initially.")
 	// 	configslist := r.schedule(deltaReqs)
 	// 	for _, config := range configslist {
@@ -249,27 +209,69 @@ func (r *FaSTFuncReconciler) getDesiredFastfuncSpec(fastfunc *fastfuncv1.FaSTFun
 	// 	}
 	// 	fastpods, _ := r.configs2FaSTPods(fastfunc, configslist)
 	// 	return fastpods
-	// } else if deltaReqs < 0 {
-	// 	if float64(-1*deltaReqs) > 0.2*totalRPSCap {
-	// 		// scaling down
-	// 		klog.Info("Scaling down")
-	// 		deltaReqs = deltaReqs * (-1)
-	// 		for key, replica := range nominalRPSmap {
-	// 			quota, smPartition := parseFromKeyName(key)
-	// 			rpsUnit := retrieveResource2RPSCapability(fastfunc.ObjectMeta.Name, float64(quota)/100.0, int64(smPartition))
-	// 			n := int64(deltaReqs / rpsUnit)
-	// 			if replica > n {
-	// 				replica = replica - n
-	// 				deltaReqs = deltaReqs - float64(n)*rpsUnit
-	// 			} else {
-	// 				replica = 0
-	// 				deltaReqs = deltaReqs - float64(replica)*rpsUnit
-	// 			}
-	// 			r.scaleDownFaSTFunc(fastfunc.ObjectMeta.Name+key, replica)
-	// 		}
+	// } else if scaling && oldRPS > 0 && pastRPS > 0 {
+	// 	klog.Infof("Scaling up normally")
+	// 	configlist := r.schedule(deltaReqs)
+	// 	for _, config := range configlist {
+	// 		klog.Infof("originally required replica: %d", config.Replicas)
+	// 		factor := pastRPS / oldRPS
+	// 		var tmp float64
+	// 		tmp = float64(config.Replicas) * factor
+	// 		config.Replicas = int64(math.Ceil(tmp))
+	// 		klog.Infof("new replica: %d", config.Replicas)
 	// 	}
+	// 	fastpods, _ := r.configs2FaSTPods(fastfunc, configlist)
+	// 	return fastpods
+	// } else if deltaReqs < 0 {
+	// 	// scaling down
+	// 	klog.Info("Scaling down")
+	// 	deltaReqs = deltaReqs * (-1)
+	// 	for key, replica := range nominalRPSmap {
+	// 		quota, smPartition := parseFromKeyName(key)
+	// 		rpsUnit := retrieveResource2RPSCapability(fastfunc.ObjectMeta.Name, float64(quota)/100.0, int64(smPartition))
+	// 		n := int64(deltaReqs / rpsUnit)
+	// 		if replica > n {
+	// 			replica = replica - n
+	// 			deltaReqs = deltaReqs - float64(n)*rpsUnit
+	// 		} else {
+	// 			replica = 0
+	// 			deltaReqs = deltaReqs - float64(replica)*rpsUnit
+	// 		}
+	// 		r.scaleDownFaSTFunc(fastfunc.ObjectMeta.Name+key, replica)
+	// 	}
+
 	// }
-	// // KONTON Testing End
+
+	// KONTON Testing Start
+	if deltaReqs > 0.2*totalRPSCap {
+		klog.Info("Scaling up initially.")
+		configslist := r.schedule(deltaReqs)
+		for _, config := range configslist {
+			config.Replicas += nominalRPSmap[getResKeyName(config.Quota, config.SMPartition)]
+		}
+		fastpods, _ := r.configs2FaSTPods(fastfunc, configslist)
+		return fastpods
+	} else if deltaReqs < 0 {
+		if float64(-1*deltaReqs) > 0.2*totalRPSCap {
+			// scaling down
+			klog.Info("Scaling down")
+			deltaReqs = deltaReqs * (-1)
+			for key, replica := range nominalRPSmap {
+				quota, smPartition := parseFromKeyName(key)
+				rpsUnit := retrieveResource2RPSCapability(fastfunc.ObjectMeta.Name, float64(quota)/100.0, int64(smPartition))
+				n := int64(deltaReqs / rpsUnit)
+				if replica > n {
+					replica = replica - n
+					deltaReqs = deltaReqs - float64(n)*rpsUnit
+				} else {
+					replica = 0
+					deltaReqs = deltaReqs - float64(replica)*rpsUnit
+				}
+				r.scaleDownFaSTFunc(fastfunc.ObjectMeta.Name+key, replica)
+			}
+		}
+	}
+	// KONTON Testing End
 	return nil
 }
 
@@ -344,7 +346,7 @@ func (r *FaSTFuncReconciler) configs2FaSTPods(fastfunc *fastfuncv1.FaSTFunc, con
 		extendedAnnotations[fastpodv1.FaSTGShareGPUQuotaLimit] = "1.0"
 		extendedAnnotations[fastpodv1.FaSTGShareGPUSMPartition] = smPartition
 		extendedAnnotations[fastpodv1.FaSTGShareGPUMemory] = mem
-		fixedReplica_int32 := int32(1)
+		fixedReplica_int32 := int32(config.Replicas)
 		fastpod := &fastpodv1.FaSTPod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:        fastfunc.ObjectMeta.Name + getResKeyName(config.Quota, config.SMPartition),
