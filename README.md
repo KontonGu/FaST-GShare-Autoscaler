@@ -1,5 +1,7 @@
 # FaST-GShare-Autoscaler
-FaST-GShare-Autoscaler is a serverless implementation built based on the [FaST-GShare](https://github.com/KontonGu/FaST-GShare.git). This platform introduces a new `FaSTFunc` CRD (Custom Resource Definition) along with its corresponding Operator Controller. FaSTFunc enables FaaS-level control over FaSTPods within FaST-GShare. Users only need to define the container image required for deep model inference and deploy it. FaST-GShare-Autoscaler will automatically scale the model instances based on varying and real-time user workloads, including both vertical and horizontal scaling. Vertical scaling allows for more granular GPU resource allocation, optimizing the sharing and utilization of GPU computational resources.
+FaST-GShare-Autoscaler is a serverless implementation built based on the [FaST-GShare](https://github.com/KontonGu/FaST-GShare.git). This platform introduces a new `FaSTFunc` CRD (Custom Resource Definition) along with its corresponding Operator Controller. FaSTFunc enables FaaS-level control over FaSTPods within FaST-GShare. Users only need to define the container image required for deep model inference and deploy it. FaST-GShare-Autoscaler will automatically scale the model instances based on varying and real-time user workloads.
+
+<!-- including both vertical and horizontal scaling. Vertical scaling allows for more granular GPU resource allocation, optimizing the sharing and utilization of GPU computational resources. -->
 
 
 ## Getting Started
