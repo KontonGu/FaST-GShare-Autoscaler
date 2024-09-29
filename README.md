@@ -1,8 +1,6 @@
 # FaST-GShare-Autoscaler
-// TODO(user): Add simple overview of use/purpose
+FaST-GShare-Autoscaler is a serverless implementation built based on the [FaST-GShare](https://github.com/KontonGu/FaST-GShare.git). This platform introduces a new `FaSTFunc` CRD (Custom Resource Definition) along with its corresponding Operator Controller. FaSTFunc enables FaaS-level control over FaSTPods within FaST-GShare. Users only need to define the container image required for deep model inference and deploy it. FaST-GShare-Autoscaler will automatically scale the model instances based on varying and real-time user workloads, including both vertical and horizontal scaling. Vertical scaling allows for more granular GPU resource allocation, optimizing the sharing and utilization of GPU computational resources.
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
 
 ## Getting Started
 
@@ -19,8 +17,13 @@
 make docker-build docker-push IMG=<some-registry>/fast-gshare-autoscaler:tag
 ```
 ex. 
-```
+```sh
 make docker-build docker-push IMG=docker.io/kontonpuku666/fast-gshare-autoscaler:test
+```
+
+build and update the container in K8S environment
+```sh
+make docker-clean docker-build docker-push IMG=docker.io/kontonpuku666/fast-gshare-autoscaler:test
 ```
 
 **NOTE:** This image ought to be published in the personal registry you specified.
@@ -38,15 +41,18 @@ make install
 ```sh
 make deploy IMG=<some-registry>/fast-gshare-autoscaler:tag
 ```
-
+ex.
+```sh
+ make deploy IMG=docker.io/kontonpuku666/fast-gshare-autoscaler:test
+```
 > **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
 privileges or be logged in as admin.
 
-**Create instances of your solution**
+**Create a FaSTFunc**
 You can apply the samples (examples) from the config/sample:
 
 ```sh
-kubectl apply -k config/samples/
+kubectl apply -f config/samples/sample.yaml
 ```
 
 >**NOTE**: Ensure that the samples has default values to test it out.
@@ -101,8 +107,8 @@ kubectl apply -f https://raw.githubusercontent.com/<org>/fast-gshare-autoscaler/
 More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
 ## License
-
-Copyright 2024.
+Copyright 2024 FaST-GShare Authors, KontonGu (**Jianfeng Gu**), et. al.
+@Techinical University of Munich, **CAPS Cloud Team**
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
