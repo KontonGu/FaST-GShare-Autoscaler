@@ -51,6 +51,7 @@ ex.
 privileges or be logged in as admin.
 
 **Create a FaSTFunc**
+
 You can apply the samples (examples) from the config/sample:
 
 ```sh
